@@ -20,6 +20,8 @@
   </div>
   
   <button class="btn-add" (click)="openForm()">Add New Donation</button>
+  <button class="btn-download" (click)="downloadPDF()">Download All Donations (PDF)</button>
+
 
   <div class="form-modal" *ngIf="showForm">
     <div class="modal-content">
@@ -28,25 +30,37 @@
       <div class="form-group">
         <label>Title:</label>
         <input type="text" [(ngModel)]="selectedDon.titre">
+        <div *ngIf="titleError" class="error-message">{{ titleError }}</div>
       </div>
-
+      
       <div class="form-group">
         <label>Description:</label>
         <textarea [(ngModel)]="selectedDon.description"></textarea>
+        <div *ngIf="descriptionError" class="error-message">{{ descriptionError }}</div>
       </div>
-
+      
       <div class="form-group">
         <label>Amount:</label>
-        <input type="number" [(ngModel)]="selectedDon.montant">
+        <input 
+          type="number" 
+          [(ngModel)]="selectedDon.montant" 
+          [min]="!selectedDon.id ? 50 : null"
+          required
+        >
+        <div *ngIf="amountError" class="error-message">{{ amountError }}</div>
       </div>
+      
 
       <div class="form-group">
         <label>Status:</label>
-        <select [(ngModel)]="selectedDon.status">
+        <select [(ngModel)]="selectedDon.status" [disabled]="!selectedDon.id">
+          <option value="PENDING">Pending</option>
           <option value="ACCEPTE">Accepted</option>
           <option value="REFUSE">Refused</option>
         </select>
+        <small *ngIf="!selectedDon.id">(Status will be set to PENDING by default)</small>
       </div>
+      
 
       <div class="form-actions">
         <button class="btn-cancel" (click)="closeForm()">Cancel</button>
@@ -94,13 +108,18 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let don of filteredDons">
+      <tr *ngFor="let don of paginatedDons">
+
         <td>{{ don.titre }}</td>
         <td>{{ don.description }}</td>
         <td>{{ don.montant | currency }}</td>
         <td>
           <span class="status" [class]="don.status.toLowerCase()">
-            {{ don.status === 'ACCEPTE' ? 'Accepted' : 'Refused' }}
+            {{
+              don.status === 'ACCEPTE' ? 'Accepted' :
+              don.status === 'REFUSE' ? 'Refused' :
+              'Pending'
+            }}
           </span>
         </td>
         <td>
@@ -110,7 +129,29 @@
         </td>
       </tr>
     </tbody>
+    
   </table>
+  <div class="pagination-controls" *ngIf="totalPages > 1">
+    <button 
+      (click)="goToPage(currentPage - 1)" 
+      [disabled]="currentPage === 1">
+      Previous
+    </button>
+  
+    <button 
+      *ngFor="let page of [].constructor(totalPages); let i = index" 
+      (click)="goToPage(i + 1)" 
+      [class.active]="currentPage === (i + 1)">
+      {{ i + 1 }}
+    </button>
+  
+    <button 
+      (click)="goToPage(currentPage + 1)" 
+      [disabled]="currentPage === totalPages">
+      Next
+    </button>
+  </div>
+  
   <div *ngIf="priceFilterActive && filteredDons.length === 0" class="no-results">
     No donations found matching your filter criteria
   </div>
